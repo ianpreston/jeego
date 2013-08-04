@@ -5,7 +5,6 @@ import (
 	"net"
 	"bufio"
 	"strings"
-	"time"
 )
 
 type EventSocket struct {
@@ -30,16 +29,23 @@ func (es *EventSocket) Handle() {
 	// Read in headers from FreeSWITCH. This will also populate the 'uuid' and 'callerId'
 	// properties
 	es.ReadHeaders()
+
+	// Send initial setup commands for this channel
+	es.Setup()
 	
-	// Testing: print debug info, play a tone for 1.5 seconds, hang up
+	// Testing: print debug info and run a test XML API Response
 	fmt.Println("Channel UUID: " + es.uuid)
 	fmt.Println("Called ID   : " + es.callerId)
-	es.SendExecuteArg("playback", "{loops=-1}tone_stream://%%(251,0,1004)")
-	time.Sleep(time.Millisecond * 1500)
-	es.SendExecute("break")
-	time.Sleep(time.Millisecond * 1000)
-	es.SendExecute("hangup")
+	xmlSrc := `
+		<Response>
+			<Say message="Hello, world! This is built with Jeego, and FreeSWITCH." />
+			<Say message="Testing one two three four five" />
+			<Read digits="2" action="http://example.com/" />
+		</Response>
+	`
+	es.EvaluateXmlApiResponse(xmlSrc)
 
+	es.SendExecute("hangup")
 	es.conn.Close()
 }
 
@@ -74,6 +80,11 @@ func (es *EventSocket) Answer() {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: answer\n\n")
 }
 
+func (es *EventSocket) Setup() {
+	es.SendExecuteArg("set", "tts_engine=flite")
+	es.SendExecuteArg("set", "tts_voice=kal")
+}
+
 func (es *EventSocket) SendExecute(appName string) {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: %s\n\n", appName)
 	es.EatResponse()
@@ -97,5 +108,13 @@ func (es *EventSocket) EatResponse() {
 		if len(tokens) < 2 {
 			return
 		}
+	}
+}
+
+func (es *EventSocket) EvaluateXmlApiResponse(xmlSrc string) {
+	commands := ParseXmlApiResponse(xmlSrc)
+
+	for i := 0; i < len(commands); i ++ {
+		commands[i].Evaluate(es)
 	}
 }
