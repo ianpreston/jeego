@@ -25,8 +25,7 @@ func NewEventSocket(conn net.Conn) *EventSocket {
 
 func (es *EventSocket) Handle() {
 	// Initiate the Event Socket Outbound connection and answer the call
-	fmt.Fprintf(es.conn, "connect\n\n")
-	es.SendExecute("answer")
+	es.Answer()
 
 	// Read in headers from FreeSWITCH. This will also populate the 'uuid' and 'callerId'
 	// properties
@@ -70,10 +69,33 @@ func (es *EventSocket) ReadHeaders() {
 	es.callerId = es.headers["Caller-Caller-ID-Number"]
 }
 
+func (es *EventSocket) Answer() {
+	fmt.Fprintf(es.conn, "connect\n\n")
+	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: answer\n\n")
+}
+
 func (es *EventSocket) SendExecute(appName string) {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: %s\n\n", appName)
+	es.EatResponse()
 }
 
 func (es *EventSocket) SendExecuteArg(appName string, appArg string) {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: %s\nexecute-app-arg: %s\n\n", appName, appArg)
+	es.EatResponse()
+}
+
+func (es *EventSocket) EatResponse() {
+	for {
+		line, err := es.reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading from socket")
+			es.conn.Close()
+			return
+		}
+
+		tokens := strings.Split(line, ": ")
+		if len(tokens) < 2 {
+			return
+		}
+	}
 }
