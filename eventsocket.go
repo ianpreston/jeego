@@ -28,27 +28,38 @@ func (es *EventSocket) Handle() {
 
 	// Read in headers from FreeSWITCH. This will also populate the 'uuid' and 'callerId'
 	// properties
-	es.ReadHeaders()
+	err := es.ReadHeaders()
+	if err != nil {
+		fmt.Printf("Failed to read headers with error: %s\n", err.Error())
+		es.conn.Close()
+		return
+	}
 
 	// Send initial setup commands for this channel
 	es.Setup()
 	
 	// Testing: print debug info and run a test XML API Response
 	fmt.Println("Channel UUID: " + es.uuid)
-	fmt.Println("Called ID   : " + es.callerId)
-	es.XmlApiRequest("http://ian-preston.com/jeego/example.xml")
+	fmt.Println("Caller ID   : " + es.callerId)
 
-	es.SendExecute("hangup")
+	err = es.XmlApiRequest("http://ian-preston.com/jeego/example.xml")
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+
+		es.SendExecute("hangup")
+		es.conn.Close()
+		return
+	}
+
+	
 	es.conn.Close()
 }
 
-func (es *EventSocket) ReadHeaders() {
+func (es *EventSocket) ReadHeaders() error {
 	for {
 		line, err := es.reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Error reading from socket")
-			es.conn.Close()
-			return
+			return err
 		}
 
 		tokens := strings.Split(line, ": ")
@@ -66,11 +77,17 @@ func (es *EventSocket) ReadHeaders() {
 
 	es.uuid = es.headers["Channel-Unique-ID"]
 	es.callerId = es.headers["Caller-Caller-ID-Number"]
+
+	return nil
 }
 
 func (es *EventSocket) Answer() {
 	fmt.Fprintf(es.conn, "connect\n\n")
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: answer\n\n")
+}
+
+func (es *EventSocket) Hangup() {
+	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: hangup\n\n")
 }
 
 func (es *EventSocket) Setup() {
@@ -88,27 +105,37 @@ func (es *EventSocket) SendExecuteArg(appName string, appArg string) {
 	es.EatResponse()
 }
 
-func (es *EventSocket) EatResponse() {
+func (es *EventSocket) EatResponse() error {
 	for {
 		line, err := es.reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Error reading from socket")
-			es.conn.Close()
-			return
+			return err
 		}
 
 		tokens := strings.Split(line, ": ")
 		if len(tokens) < 2 {
-			return
+			return nil
 		}
 	}
 }
 
-func (es *EventSocket) XmlApiRequest(url string) {
-	xmlSrc := MakeXmlApiRequest(url)
-	commands := ParseXmlApiResponse(xmlSrc)
+func (es *EventSocket) XmlApiRequest(url string) error {
+	xmlSrc, err := MakeXmlApiRequest(url)
+	if err != nil {
+		return err
+	}
+
+	commands, err := ParseXmlApiResponse(xmlSrc)
+	if err != nil {
+		return err
+	}
 
 	for i := 0; i < len(commands); i ++ {
-		commands[i].Evaluate(es)
+		err = commands[i].Evaluate(es)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
