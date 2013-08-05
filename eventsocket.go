@@ -36,14 +36,7 @@ func (es *EventSocket) Handle() {
 	// Testing: print debug info and run a test XML API Response
 	fmt.Println("Channel UUID: " + es.uuid)
 	fmt.Println("Called ID   : " + es.callerId)
-	xmlSrc := `
-		<Response>
-			<Say message="Hello, world! This is built with Jeego, and FreeSWITCH." />
-			<Say message="Testing one two three four five" />
-			<Read digits="2" action="http://example.com/" />
-		</Response>
-	`
-	es.EvaluateXmlApiResponse(xmlSrc)
+	es.XmlApiRequest("http://ian-preston.com/jeego/example.xml")
 
 	es.SendExecute("hangup")
 	es.conn.Close()
@@ -111,7 +104,8 @@ func (es *EventSocket) EatResponse() {
 	}
 }
 
-func (es *EventSocket) EvaluateXmlApiResponse(xmlSrc string) {
+func (es *EventSocket) XmlApiRequest(url string) {
+	xmlSrc := MakeXmlApiRequest(url)
 	commands := ParseXmlApiResponse(xmlSrc)
 
 	for i := 0; i < len(commands); i ++ {

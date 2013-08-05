@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/xml"
+	"net/http"
+	"io/ioutil"
+	"fmt"
 )
 
 type Command interface {
@@ -12,7 +15,7 @@ type Say struct {
 	Message string
 }
 
-func (s *Say) Evaluate(es *EventSocket) {
+func (s Say) Evaluate(es *EventSocket) {
 	es.SendExecuteArg("speak", s.Message)
 }
 
@@ -21,7 +24,8 @@ type Read struct {
 	Action string
 }
 
-func (r *Read) Evaluate(es *EventSocket) {
+func (r Read) Evaluate(es *EventSocket) {
+	es.XmlApiRequest(r.Action)
 }
 
 
@@ -41,6 +45,21 @@ type XmlCommand struct {
 	Action string `xml:"action,attr"`
 }
 
+func MakeXmlApiRequest(url string) string {
+	res, err := http.Get(url)
+	if err != nil {
+		return ""
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return ""
+	}
+
+	return string(body)
+}
+
 func ParseXmlApiResponse(xmlSrc string) []Command {
 	// Parse XML response into an XmlResponse object
 	var r XmlResponse
@@ -54,9 +73,8 @@ func ParseXmlApiResponse(xmlSrc string) []Command {
 	commands := make([]Command, len(r.Commands))
 	for i := 0; i < len(r.Commands); i ++ {
 		cmd := r.Commands[i]
-		cmdName := cmd.XMLName.Local
 
-		switch cmdName {
+		switch cmd.XMLName.Local {
 		case "Say":
 			c := &Say{ cmd.Message }
 			commands[i] = c
