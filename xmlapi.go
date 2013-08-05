@@ -26,6 +26,8 @@ type Read struct {
 }
 
 func (r Read) Evaluate(es *EventSocket) error {
+	es.SendExecuteArg("read", fmt.Sprintf("%v %v conference/8000/conf-pin.wav digits 10000 #", r.Digits, r.Digits))
+	es.SendExecuteArg("phrase", "spell,${digits}")
 	err := es.XmlApiRequest(r.Action)
 	if err != nil {
 		return err
