@@ -24,6 +24,7 @@ func (srv *Server) Listen() {
 		if err != nil {
 			fmt.Println("Error accepting connection")
 			conn.Close()
+			continue
 		}
 
 		go srv.Handle(conn)

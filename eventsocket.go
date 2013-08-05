@@ -119,22 +119,15 @@ func (es *EventSocket) EatResponse() error {
 	}
 }
 
-func (es *EventSocket) XmlApiRequest(url string) error {
-	xmlSrc, err := MakeXmlApiRequest(url)
+func (es *EventSocket) XmlApiRequest(rootUrl string) error {
+	x, err := NewXMLAPI(es, rootUrl)
 	if err != nil {
 		return err
 	}
 
-	commands, err := ParseXmlApiResponse(xmlSrc)
+	err = x.EvaluateAll()
 	if err != nil {
 		return err
-	}
-
-	for i := 0; i < len(commands); i ++ {
-		err = commands[i].Evaluate(es)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
