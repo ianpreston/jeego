@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"io"
 	"bufio"
 	"strings"
@@ -34,8 +35,7 @@ func (es *EventSocket) Handle() {
 	// Testing: print debug info and run a test XML API Response
 	fmt.Println("Channel UUID: " + es.uuid)
 	fmt.Println("Caller ID   : " + es.callerId)
-
-	err = es.XmlApiRequest("http://ian-preston.com/jeego/example.xml")
+	err := es.XmlApiRequest("http://ian-preston.com/jeego/example.xml", nil)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 
@@ -169,8 +169,8 @@ func (es *EventSocket) ParseResponse() (string, error) {
 	return "", fmt.Errorf("Event Socket Outbound response was in an unrecognized format")
 }
 
-func (es *EventSocket) XmlApiRequest(rootUrl string) error {
-	x, err := NewXMLAPI(es, rootUrl)
+func (es *EventSocket) XmlApiRequest(rootUrl string, additionalRequestParams url.Values) error {
+	x, err := NewXMLAPI(es, rootUrl, additionalRequestParams)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"encoding/xml"
 	"net/http"
+	"net/url"
+	"encoding/xml"
 	"io/ioutil"
 	"fmt"
 )
@@ -13,12 +14,13 @@ import (
 type XMLAPI struct {
 	es *EventSocket
 	rootUrl string
+	additionalRequestParams url.Values
 
 	commands []Command
 }
 
-func NewXMLAPI(es *EventSocket, rootUrl string) (*XMLAPI, error) {
-	x := &XMLAPI{ es, rootUrl, nil }
+func NewXMLAPI(es *EventSocket, rootUrl string, additionalRequestParams url.Values) (*XMLAPI, error) {
+	x := &XMLAPI{ es, rootUrl, additionalRequestParams, nil }
 
 	xmlSrc, err := x.MakeRequest()
 	if err != nil {
@@ -34,7 +36,19 @@ func NewXMLAPI(es *EventSocket, rootUrl string) (*XMLAPI, error) {
 }
 
 func (x *XMLAPI) MakeRequest() (string, error) {
-	res, err := http.Get(x.rootUrl)
+	// Merge the provided request URL, the default paramaters, and the specified additional
+	// paramaters to create the request URL w/ querystring
+	params := x.DefaultRequestParams()
+	if x.additionalRequestParams != nil {
+		for k, v := range x.additionalRequestParams {
+			params[k] = v
+		}
+	}
+	requestUrl := fmt.Sprintf("%s?%s", x.rootUrl, params.Encode())
+	fmt.Println(requestUrl)
+
+	// Send the request
+	res, err := http.Get(requestUrl)
 	if err != nil {
 		return "", err
 	}
@@ -42,6 +56,7 @@ func (x *XMLAPI) MakeRequest() (string, error) {
 		return "", fmt.Errorf("remote host returned non-200 status code for url: %s", x.rootUrl)
 	}
 
+	// Read & return the response
 	body, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
@@ -49,6 +64,10 @@ func (x *XMLAPI) MakeRequest() (string, error) {
 	}
 
 	return string(body), nil
+}
+
+func (x *XMLAPI) DefaultRequestParams() url.Values {
+	return url.Values{ "callerId": {"0000"} }
 }
 
 func (x *XMLAPI) ParseResponse(xmlSrc string) ([]Command, error) {
@@ -116,7 +135,7 @@ func (r Read) Evaluate(es *EventSocket) error {
 	es.SendExecuteArg("read", fmt.Sprintf("%v %v conference/8000/conf-pin.wav digits 10000 #", r.Digits, r.Digits))
 	es.SendExecuteArg("phrase", "spell,${digits}")
 
-	err := es.XmlApiRequest(r.Action)
+	err := es.XmlApiRequest(r.Action, nil)
 	if err != nil {
 		return err
 	}
