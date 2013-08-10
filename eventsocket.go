@@ -26,15 +26,6 @@ func (es *EventSocket) Handle() {
 	// Initiate the Event Socket Outbound connection and answer the call
 	es.Answer()
 
-	// Read in headers from FreeSWITCH. This will also populate the 'uuid' and 'callerId'
-	// properties
-	err := es.ReadHeaders()
-	if err != nil {
-		fmt.Printf("Failed to read headers with error: %s\n", err.Error())
-		es.conn.Close()
-		return
-	}
-
 	// Send initial setup commands for this channel
 	es.Setup()
 	
@@ -82,8 +73,19 @@ func (es *EventSocket) ReadHeaders() error {
 }
 
 func (es *EventSocket) Answer() {
+	// Send the 'connect' command to initiate the Event Socket Outbound session
 	fmt.Fprintf(es.conn, "connect\n\n")
-	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: answer\n\n")
+
+	// Read in headers from FreeSWITCH. This will also populate the 'uuid' and 'callerId'
+	// properties
+	err := es.ReadHeaders()
+	if err != nil {
+		fmt.Printf("Failed to read headers with error: %s\n", err.Error())
+		es.conn.Close()
+		return
+	}
+
+	es.SendExecute("answer")
 }
 
 func (es *EventSocket) Hangup() {
