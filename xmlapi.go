@@ -68,7 +68,7 @@ func (x *XMLAPI) MakeRequest() (string, error) {
 }
 
 func (x *XMLAPI) DefaultRequestParams() url.Values {
-	return url.Values{ "callerId": {"0000"} }
+	return url.Values{ "callerId": {x.es.callerId} }
 }
 
 func (x *XMLAPI) ParseResponse(xmlSrc string) ([]Command, error) {
