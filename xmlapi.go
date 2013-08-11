@@ -92,6 +92,9 @@ func (x *XMLAPI) ParseResponse(xmlSrc string) ([]Command, error) {
 		case "Read":
 			c := &Read{ cmd.Digits, cmd.Action }
 			commands[i] = c
+		case "Bridge":
+			c := &Bridge{ cmd.Did }
+			commands[i] = c
 		default:
 			return nil, fmt.Errorf("Invalid XML API command: %s", cmd.XMLName.Local)
 		}
@@ -145,6 +148,15 @@ func (r Read) Evaluate(es *EventSocket) error {
 	return nil
 }
 
+type Bridge struct {
+	Did string
+}
+
+func (b Bridge) Evaluate(es *EventSocket) error {
+	es.SendExecuteArg("bridge", fmt.Sprintf("sofia/gateway/callcentric.com/1%s$1@callcentric.com", b.Did))
+	return nil
+}
+
 /*
  * Data structures for deserializing XML
  */
@@ -162,4 +174,7 @@ type XmlCommand struct {
 	// 'Read' fields
 	Digits int `xml:"digits,attr"`
 	Action string `xml:"action,attr"`
+
+	// 'Bridge' fields
+	Did string `xml:"did,attr"`
 }
