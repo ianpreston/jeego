@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"encoding/xml"
 	"io/ioutil"
+	"os"
 	"fmt"
 )
 
@@ -132,10 +133,11 @@ type Read struct {
 }
 
 func (r Read) Evaluate(es *EventSocket) error {
-	es.SendExecuteArg("read", fmt.Sprintf("%v %v conference/8000/conf-pin.wav digits 10000 #", r.Digits, r.Digits))
-	es.SendExecuteArg("phrase", "spell,${digits}")
+	cwd, _ := os.Getwd()
+	es.SendExecuteArg("read", fmt.Sprintf("%v %v %v/empty.wav digits 10000 #", r.Digits, r.Digits, cwd))
+	digits := es.SendApi("uuid_getvar", "digits")
 
-	err := es.XmlApiRequest(r.Action, nil)
+	err := es.XmlApiRequest(r.Action, url.Values{ "digits": {digits} })
 	if err != nil {
 		return err
 	}

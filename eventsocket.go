@@ -107,6 +107,12 @@ func (es *EventSocket) SendExecuteArg(appName string, appArg string) {
 	es.ParseResponse()
 }
 
+func (es *EventSocket) SendApi(appName string, appArg string) string {
+	fmt.Fprintf(es.conn, "api %s %s %s\n\n", appName, es.uuid, appArg)
+	r, _ := es.ParseResponse()
+	return r
+}
+
 func (es *EventSocket) ParseResponse() (string, error) {
 	/**
 	 * FreeSWITCH seems to return responses in one of two formats. The first, for 'execute' commands
