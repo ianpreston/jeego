@@ -68,7 +68,7 @@ func (x *XMLAPI) MakeRequest() (string, error) {
 }
 
 func (x *XMLAPI) DefaultRequestParams() url.Values {
-	return url.Values{ "callerId": {x.es.callerId} }
+	return url.Values{ "fromDid": {x.es.fromDid}, "toDid": {x.es.toDid} }
 }
 
 func (x *XMLAPI) ParseResponse(xmlSrc string) ([]Command, error) {
@@ -153,7 +153,7 @@ type Bridge struct {
 }
 
 func (b Bridge) Evaluate(es *EventSocket) error {
-	es.SendExecuteArg("bridge", fmt.Sprintf("sofia/gateway/callcentric.com/1%s$1@callcentric.com", b.Did))
+	es.SendExecuteArg("bridge", fmt.Sprintf("sofia/gateway/callcentric.com/1%s@callcentric.com", b.Did))
 	return nil
 }
 

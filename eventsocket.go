@@ -14,7 +14,8 @@ type EventSocket struct {
 	conn net.Conn
 	reader *bufio.Reader
 	uuid string
-	callerId string
+	fromDid string
+	toDid string
 	headers map[string]string
 }
 
@@ -22,7 +23,7 @@ func NewEventSocket(conn net.Conn) *EventSocket {
 	reader := bufio.NewReader(conn)
 	headers := make(map[string]string)
 
-	return &EventSocket { conn, reader, "", "", headers }
+	return &EventSocket { conn, reader, "", "", "", headers }
 }
 
 func (es *EventSocket) Handle() {
@@ -34,7 +35,8 @@ func (es *EventSocket) Handle() {
 	
 	// Testing: print debug info and run a test XML API Response
 	fmt.Println("Channel UUID: " + es.uuid)
-	fmt.Println("Caller ID   : " + es.callerId)
+	fmt.Println("From DID    : " + es.fromDid)
+	fmt.Println("To DID      : " + es.toDid)
 	err := es.XmlApiRequest("http://ian-preston.com/jeego/example.xml", nil)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
@@ -46,37 +48,11 @@ func (es *EventSocket) Handle() {
 	es.conn.Close()
 }
 
-func (es *EventSocket) ReadHeaders() error {
-	for {
-		line, err := es.reader.ReadString('\n')
-		if err != nil {
-			return err
-		}
-
-		tokens := strings.Split(line, ": ")
-		if len(tokens) < 2 {
-			// If the string could not be split, this is probably a blank line, the
-			// end of the headers
-			break
-		}
-
-		key := strings.Trim(tokens[0], "\n")
-		value := strings.Trim(tokens[1], "\n")
-
-		es.headers[key] = value
-	}
-
-	es.uuid = es.headers["Channel-Unique-ID"]
-	es.callerId = es.headers["Caller-Caller-ID-Number"]
-
-	return nil
-}
-
 func (es *EventSocket) Answer() {
 	// Send the 'connect' command to initiate the Event Socket Outbound session
 	fmt.Fprintf(es.conn, "connect\n\n")
 
-	// Read in headers from FreeSWITCH. This will also populate the 'uuid' and 'callerId'
+	// Read in headers from FreeSWITCH. This will also populate the 'uuid', 'fromDid' and 'toDid'
 	// properties
 	err := es.ReadHeaders()
 	if err != nil {
@@ -173,6 +149,35 @@ func (es *EventSocket) ParseResponse() (string, error) {
 	}
 
 	return "", fmt.Errorf("Event Socket Outbound response was in an unrecognized format")
+}
+
+func (es *EventSocket) ReadHeaders() error {
+	for {
+		line, err := es.reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+
+		tokens := strings.Split(line, ": ")
+		if len(tokens) < 2 {
+			// If the string could not be split, this is probably a blank line, the
+			// end of the headers
+			break
+		}
+
+		key := strings.Trim(tokens[0], "\n")
+		value := strings.Trim(tokens[1], "\n")
+
+		es.headers[key] = value
+
+		fmt.Println(line)
+	}
+
+	es.uuid = es.headers["Channel-Unique-ID"]
+	es.fromDid = es.headers["Caller-Caller-ID-Number"]
+	es.toDid = es.headers["variable_sip_to_user"]
+
+	return nil
 }
 
 func (es *EventSocket) XmlApiRequest(rootUrl string, additionalRequestParams url.Values) error {
