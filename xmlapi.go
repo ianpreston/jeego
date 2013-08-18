@@ -73,8 +73,8 @@ func (x *XMLAPI) DefaultRequestParams() url.Values {
 
 func (x *XMLAPI) ParseResponse(xmlSrc string) ([]Command, error) {
 	// Parse XML response into an XmlResponse object
-	var r XmlResponse
-	err := xml.Unmarshal([]byte(xmlSrc), &r)
+	r := &XmlResponse{}
+	err := xml.Unmarshal([]byte(xmlSrc), r)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,8 @@ type Bridge struct {
 }
 
 func (b Bridge) Evaluate(es *EventSocket) error {
-	es.SendExecuteArg("bridge", fmt.Sprintf("sofia/gateway/callcentric.com/1%s@callcentric.com", b.Did))
+	bridgeSipUrl := fmt.Sprintf("sofia/gateway/%s/%s@%s", es.server.config.SofiaGatewayName, b.Did, es.server.config.SofiaGatewayHost)
+	es.SendExecuteArg("bridge", bridgeSipUrl)
 	return nil
 }
 

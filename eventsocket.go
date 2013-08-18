@@ -13,17 +13,18 @@ import (
 type EventSocket struct {
 	conn net.Conn
 	reader *bufio.Reader
+	server *Server
 	uuid string
 	fromDid string
 	toDid string
 	headers map[string]string
 }
 
-func NewEventSocket(conn net.Conn) *EventSocket {
+func NewEventSocket(conn net.Conn, server *Server) *EventSocket {
 	reader := bufio.NewReader(conn)
 	headers := make(map[string]string)
 
-	return &EventSocket { conn, reader, "", "", "", headers }
+	return &EventSocket { conn, reader, server, "", "", "", headers }
 }
 
 func (es *EventSocket) Handle() {
@@ -32,12 +33,24 @@ func (es *EventSocket) Handle() {
 
 	// Send initial setup commands for this channel
 	es.Setup()
-	
-	// Testing: print debug info and run a test XML API Response
+
+	// Print debug info
 	fmt.Println("Channel UUID: " + es.uuid)
 	fmt.Println("From DID    : " + es.fromDid)
 	fmt.Println("To DID      : " + es.toDid)
-	err := es.XmlApiRequest("http://ian-preston.com/jeego/example.xml", nil)
+
+	// Determine, via the routes from the config file, the root URL for
+	// the 'to' DID
+	rr := es.server.config.RouteRuleForDID(es.toDid)
+	if rr == nil {
+		fmt.Println("There is no route rule configured for this DID")
+		es.SendExecute("hangup")
+		es.conn.Close()
+		return
+	}
+
+	// Make an XML API request to this URL
+	err := es.XmlApiRequest(rr.URL, nil)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 
@@ -45,6 +58,7 @@ func (es *EventSocket) Handle() {
 		es.conn.Close()
 		return
 	}
+
 	es.conn.Close()
 }
 
@@ -169,12 +183,10 @@ func (es *EventSocket) ReadHeaders() error {
 		value := strings.Trim(tokens[1], "\n")
 
 		es.headers[key] = value
-
-		fmt.Println(line)
 	}
 
 	es.uuid = es.headers["Channel-Unique-ID"]
-	es.fromDid = es.headers["Caller-Caller-ID-Number"]
+	es.fromDid = es.headers["variable_sip_from_user"]
 	es.toDid = es.headers["variable_sip_to_user"]
 
 	return nil

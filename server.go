@@ -7,15 +7,16 @@ import (
 
 type Server struct {
 	listener net.Listener
+	config *Config
 }
 
-func NewServer(bindTo string) *Server {
-	listener, err := net.Listen("tcp", bindTo)
+func NewServer(config *Config) *Server {
+	listener, err := net.Listen("tcp", config.BindTo)
 	if err != nil {
 		return nil;
 	}
 
-	return &Server{ listener }
+	return &Server{ listener, config }
 }
 
 func (srv *Server) Listen() {
@@ -26,7 +27,7 @@ func (srv *Server) Listen() {
 			conn.Close()
 			continue
 		}
-
+		
 		go srv.Handle(conn)
 	}
 }
@@ -34,6 +35,6 @@ func (srv *Server) Listen() {
 func (srv *Server) Handle(conn net.Conn) {
 	fmt.Println("Connection accepted")
 
-	es := NewEventSocket(conn)
+	es := NewEventSocket(conn, srv)
 	es.Handle()
 }

@@ -1,6 +1,7 @@
 package main
 
 func main() {
-	srv := NewServer("0.0.0.0:8084")
+	config := LoadConfig("config.xml")
+	srv := NewServer(config)
 	srv.Listen()
 }

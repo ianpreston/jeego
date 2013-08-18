@@ -1,0 +1,10 @@
+<Jeego>
+	<BindTo>127.0.0.1:8084</BindTo>
+	<SofiaGatewayName>callcentric.com</SofiaGatewayName>
+	<SofiaGatewayHost>callcentric.com</SofiaGatewayHost>
+
+	<Routes>
+		<Rule DID="14805550000" URL="http://example.com/api/incomingcall" />
+		<Rule DID="14805551111" URL="https://example.net/somefile.xml" />
+	</Routes>
+</Jeego>

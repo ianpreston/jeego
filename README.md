@@ -18,6 +18,10 @@ Add a Dialplan entry to FreeSWITCH
       </condition>
     </extension>
 
+Edit config-example.xml, then save it as `config.xml`
+
+    cp config-example.xml config.xml
+
 Run
 
 	./jeego
