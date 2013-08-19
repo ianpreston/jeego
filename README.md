@@ -10,6 +10,10 @@ Build the source
 
     go build
 
+Create a config file
+
+    cp config-example.xml /etc/jeego.xml
+
 Add a Dialplan entry to FreeSWITCH
 
     <extension name="jeego">
@@ -17,10 +21,6 @@ Add a Dialplan entry to FreeSWITCH
         <action application="socket" data="127.0.0.1:8084 full"/>
       </condition>
     </extension>
-
-Edit config-example.xml, then save it as `config.xml`
-
-    cp config-example.xml config.xml
 
 Run
 
