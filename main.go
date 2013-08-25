@@ -12,6 +12,6 @@ func main() {
 	}
 	config := LoadConfig(configFilePath)
 
-	srv := NewServer(config)
-	srv.Listen()
+	eso := NewESOListener(config)
+	eso.Listen()
 }

@@ -5,36 +5,36 @@ import (
 	"fmt"
 )
 
-type Server struct {
+type ESOListener struct {
 	listener net.Listener
 	config *Config
 }
 
-func NewServer(config *Config) *Server {
+func NewESOListener(config *Config) *ESOListener {
 	listener, err := net.Listen("tcp", config.BindTo)
 	if err != nil {
 		return nil;
 	}
 
-	return &Server{ listener, config }
+	return &ESOListener{ listener, config }
 }
 
-func (srv *Server) Listen() {
+func (eso *ESOListener) Listen() {
 	for {
-		conn, err := srv.listener.Accept()
+		conn, err := eso.listener.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection")
 			conn.Close()
 			continue
 		}
 		
-		go srv.Handle(conn)
+		go eso.Handle(conn)
 	}
 }
 
-func (srv *Server) Handle(conn net.Conn) {
+func (eso *ESOListener) Handle(conn net.Conn) {
 	fmt.Println("Connection accepted")
 
-	es := NewEventSocket(conn, srv)
+	es := NewEventSocket(conn, eso)
 	es.Handle()
 }

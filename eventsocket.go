@@ -13,18 +13,18 @@ import (
 type EventSocket struct {
 	conn net.Conn
 	reader *bufio.Reader
-	server *Server
+	eso *ESOListener
 	uuid string
 	fromDid string
 	toDid string
 	headers map[string]string
 }
 
-func NewEventSocket(conn net.Conn, server *Server) *EventSocket {
+func NewEventSocket(conn net.Conn, eso *ESOListener) *EventSocket {
 	reader := bufio.NewReader(conn)
 	headers := make(map[string]string)
 
-	return &EventSocket { conn, reader, server, "", "", "", headers }
+	return &EventSocket { conn, reader, eso, "", "", "", headers }
 }
 
 func (es *EventSocket) Handle() {
@@ -41,7 +41,7 @@ func (es *EventSocket) Handle() {
 
 	// Determine, via the routes from the config file, the root URL for
 	// the 'to' DID
-	rr := es.server.config.RouteRuleForDID(es.toDid)
+	rr := es.eso.config.RouteRuleForDID(es.toDid)
 	if rr == nil {
 		fmt.Println("There is no route rule configured for this DID")
 		es.SendExecute("hangup")
@@ -188,6 +188,9 @@ func (es *EventSocket) ReadHeaders() error {
 	es.uuid = es.headers["Channel-Unique-ID"]
 	es.fromDid = es.headers["variable_sip_from_user"]
 	es.toDid = es.headers["variable_sip_to_user"]
+
+	// TODO On an outbound call, 'variable_jeego_outbound_number' will be
+	// the # we are actually calling from.
 
 	return nil
 }
