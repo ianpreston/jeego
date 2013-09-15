@@ -13,14 +13,14 @@ import (
  * XML API Manager
  */
 type XMLAPI struct {
-	es *EventSocket
+	es *ESOutbound
 	rootUrl string
 	additionalRequestParams url.Values
 
 	commands []Command
 }
 
-func NewXMLAPI(es *EventSocket, rootUrl string, additionalRequestParams url.Values) (*XMLAPI, error) {
+func NewXMLAPI(es *ESOutbound, rootUrl string, additionalRequestParams url.Values) (*XMLAPI, error) {
 	x := &XMLAPI{ es, rootUrl, additionalRequestParams, nil }
 
 	xmlSrc, err := x.MakeRequest()
@@ -118,14 +118,14 @@ func (x *XMLAPI) EvaluateAll() error {
  * XML API Commands
  */
 type Command interface {
-	Evaluate(es *EventSocket) error
+	Evaluate(es *ESOutbound) error
 }
 
 type Say struct {
 	Message string
 }
 
-func (s Say) Evaluate(es *EventSocket) error {
+func (s Say) Evaluate(es *ESOutbound) error {
 	es.SendExecuteArg("speak", s.Message)
 	return nil
 }
@@ -135,7 +135,7 @@ type Read struct {
 	Action string
 }
 
-func (r Read) Evaluate(es *EventSocket) error {
+func (r Read) Evaluate(es *ESOutbound) error {
 	cwd, _ := os.Getwd()
 	es.SendExecuteArg("read", fmt.Sprintf("%v %v %v/empty.wav digits 10000 #", r.Digits, r.Digits, cwd))
 	digits := es.SendApi("uuid_getvar", "digits")
@@ -152,7 +152,7 @@ type Bridge struct {
 	Did string
 }
 
-func (b Bridge) Evaluate(es *EventSocket) error {
+func (b Bridge) Evaluate(es *ESOutbound) error {
 	bridgeSipUrl := fmt.Sprintf("sofia/gateway/%s/%s@%s", es.eso.config.SofiaGatewayName, b.Did, es.eso.config.SofiaGatewayHost)
 	es.SendExecuteArg("bridge", bridgeSipUrl)
 	return nil

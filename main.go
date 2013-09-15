@@ -13,5 +13,10 @@ func main() {
 	config := LoadConfig(configFilePath)
 
 	eso := NewESOListener(config)
-	eso.Listen()
+	go eso.Listen()
+
+	hl := NewHTTPListener(config)
+	go hl.Listen()
+
+	<- make(chan int)
 }

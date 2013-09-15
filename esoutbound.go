@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-type EventSocket struct {
+type ESOutbound struct {
 	conn net.Conn
 	reader *bufio.Reader
 	eso *ESOListener
@@ -20,14 +20,14 @@ type EventSocket struct {
 	headers map[string]string
 }
 
-func NewEventSocket(conn net.Conn, eso *ESOListener) *EventSocket {
+func NewESOutbound(conn net.Conn, eso *ESOListener) *ESOutbound {
 	reader := bufio.NewReader(conn)
 	headers := make(map[string]string)
 
-	return &EventSocket { conn, reader, eso, "", "", "", headers }
+	return &ESOutbound { conn, reader, eso, "", "", "", headers }
 }
 
-func (es *EventSocket) Handle() {
+func (es *ESOutbound) Handle() {
 	// Initiate the Event Socket Outbound connection and answer the call
 	es.Answer()
 
@@ -62,7 +62,7 @@ func (es *EventSocket) Handle() {
 	es.conn.Close()
 }
 
-func (es *EventSocket) Answer() {
+func (es *ESOutbound) Answer() {
 	// Send the 'connect' command to initiate the Event Socket Outbound session
 	fmt.Fprintf(es.conn, "connect\n\n")
 
@@ -78,32 +78,32 @@ func (es *EventSocket) Answer() {
 	es.SendExecute("answer")
 }
 
-func (es *EventSocket) Hangup() {
+func (es *ESOutbound) Hangup() {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: hangup\n\n")
 }
 
-func (es *EventSocket) Setup() {
+func (es *ESOutbound) Setup() {
 	es.SendExecuteArg("set", "tts_engine=flite")
 	es.SendExecuteArg("set", "tts_voice=kal")
 }
 
-func (es *EventSocket) SendExecute(appName string) {
+func (es *ESOutbound) SendExecute(appName string) {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: %s\n\n", appName)
 	es.ParseResponse()
 }
 
-func (es *EventSocket) SendExecuteArg(appName string, appArg string) {
+func (es *ESOutbound) SendExecuteArg(appName string, appArg string) {
 	fmt.Fprintf(es.conn, "sendmsg\ncall-command: execute\nexecute-app-name: %s\nexecute-app-arg: %s\n\n", appName, appArg)
 	es.ParseResponse()
 }
 
-func (es *EventSocket) SendApi(appName string, appArg string) string {
+func (es *ESOutbound) SendApi(appName string, appArg string) string {
 	fmt.Fprintf(es.conn, "api %s %s %s\n\n", appName, es.uuid, appArg)
 	r, _ := es.ParseResponse()
 	return r
 }
 
-func (es *EventSocket) ParseResponse() (string, error) {
+func (es *ESOutbound) ParseResponse() (string, error) {
 	/**
 	 * FreeSWITCH seems to return responses in one of two formats. The first, for 'execute' commands
 	 * looks like this:
@@ -165,7 +165,7 @@ func (es *EventSocket) ParseResponse() (string, error) {
 	return "", fmt.Errorf("Event Socket Outbound response was in an unrecognized format")
 }
 
-func (es *EventSocket) ReadHeaders() error {
+func (es *ESOutbound) ReadHeaders() error {
 	for {
 		line, err := es.reader.ReadString('\n')
 		if err != nil {
@@ -195,7 +195,7 @@ func (es *EventSocket) ReadHeaders() error {
 	return nil
 }
 
-func (es *EventSocket) XmlApiRequest(rootUrl string, additionalRequestParams url.Values) error {
+func (es *ESOutbound) XmlApiRequest(rootUrl string, additionalRequestParams url.Values) error {
 	x, err := NewXMLAPI(es, rootUrl, additionalRequestParams)
 	if err != nil {
 		return err
