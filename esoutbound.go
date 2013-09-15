@@ -4,27 +4,24 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"io"
 	"bufio"
 	"strings"
-	"strconv"
 )
 
 type ESOutbound struct {
-	conn net.Conn
-	reader *bufio.Reader
-	eso *ESOListener
+	EventSocket
+
 	uuid string
 	fromDid string
 	toDid string
 	headers map[string]string
 }
 
-func NewESOutbound(conn net.Conn, eso *ESOListener) *ESOutbound {
+func NewESOutbound(conn net.Conn, config *Config) *ESOutbound {
 	reader := bufio.NewReader(conn)
 	headers := make(map[string]string)
 
-	return &ESOutbound { conn, reader, eso, "", "", "", headers }
+	return &ESOutbound { EventSocket{ conn, reader, config }, "", "", "", headers }
 }
 
 func (es *ESOutbound) Handle() {
@@ -41,7 +38,7 @@ func (es *ESOutbound) Handle() {
 
 	// Determine, via the routes from the config file, the root URL for
 	// the 'to' DID
-	rr := es.eso.config.RouteRuleForDID(es.toDid)
+	rr := es.config.RouteRuleForDID(es.toDid)
 	if rr == nil {
 		fmt.Println("There is no route rule configured for this DID")
 		es.SendExecute("hangup")
@@ -101,68 +98,6 @@ func (es *ESOutbound) SendApi(appName string, appArg string) string {
 	fmt.Fprintf(es.conn, "api %s %s %s\n\n", appName, es.uuid, appArg)
 	r, _ := es.ParseResponse()
 	return r
-}
-
-func (es *ESOutbound) ParseResponse() (string, error) {
-	/**
-	 * FreeSWITCH seems to return responses in one of two formats. The first, for 'execute' commands
-	 * looks like this:
-	 *
-	 * Content-Type: command/reply
-	 * Reply-Text: +OK did something
-	 *
-	 * The second, for 'api' commands, looks like thids:
-	 *
-	 * Content-Type: api/response
-	 * Content-Length: 13
-	 *
-	 * did something
-	 *
-	 * This method will determine which type of response it is and return the relevant data,
-	 * in this example, that would be either '+OK did something' or 'did something', respectively
-	 */
-	headers := make(map[string]string)
-
-	// Read in headers
-	for {
-		line, err := es.reader.ReadString('\n')
-		if err != nil {
-			return "", err
-		}
-
-		tokens := strings.Split(line, ": ")
-		if len(tokens) < 2 {
-			break
-		}
-
-		key := strings.Trim(tokens[0], "\n")
-		value := strings.Trim(tokens[1], "\n")
-
-		headers[key] = value
-	}
-
-	// Handle 'command/reply' responses
-	if headers["Content-Type"] == "command/reply" {
-		return headers["Reply-Text"], nil
-	}
-
-	// Handle 'api/response' responses
-	if headers["Content-Type"] == "api/response" {
-		numBytes, err := strconv.Atoi(headers["Content-Length"])
-		if err != nil {
-			return "", err
-		}
-
-		buffer := make([]byte, numBytes)
-		_, err = io.ReadFull(es.reader, buffer)
-		if err != nil {
-			return "", err
-		}
-
-		return string(buffer), nil
-	}
-
-	return "", fmt.Errorf("Event Socket Outbound response was in an unrecognized format")
 }
 
 func (es *ESOutbound) ReadHeaders() error {

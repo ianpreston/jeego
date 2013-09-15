@@ -153,7 +153,7 @@ type Bridge struct {
 }
 
 func (b Bridge) Evaluate(es *ESOutbound) error {
-	bridgeSipUrl := fmt.Sprintf("sofia/gateway/%s/%s@%s", es.eso.config.SofiaGatewayName, b.Did, es.eso.config.SofiaGatewayHost)
+	bridgeSipUrl := fmt.Sprintf("sofia/gateway/%s/%s@%s", es.config.SofiaGatewayName, b.Did, es.config.SofiaGatewayHost)
 	es.SendExecuteArg("bridge", bridgeSipUrl)
 	return nil
 }

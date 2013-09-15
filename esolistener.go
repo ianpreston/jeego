@@ -35,6 +35,6 @@ func (eso *ESOListener) Listen() {
 func (eso *ESOListener) Handle(conn net.Conn) {
 	fmt.Println("Connection accepted")
 
-	es := NewESOutbound(conn, eso)
+	es := NewESOutbound(conn, eso.config)
 	es.Handle()
 }
