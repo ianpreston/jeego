@@ -6,10 +6,15 @@ import (
 )
 
 type Config struct {
-	BindTo string
+	ESOBindTo string
+	HTTPBindTo string
+	
+	InboundDialTo string
+	InboundPassword string
+
 	SofiaGatewayName string
 	SofiaGatewayHost string
-
+	
 	RouteRules []CfgRouteRule `xml:"Routes>Rule"`
 }
 

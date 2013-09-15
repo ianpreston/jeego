@@ -1,5 +1,10 @@
 <Jeego>
-	<BindTo>127.0.0.1:8084</BindTo>
+	<ESOBindTo>127.0.0.1:8084</ESOBindTo>
+	<HTTPBindTo>:8083</HTTPBindTo>
+	
+	<InboundDialTo>127.0.0.1:8021</InboundDialTo>
+	<InboundPassword>ClueCon</InboundPassword>
+	
 	<SofiaGatewayName>callcentric.com</SofiaGatewayName>
 	<SofiaGatewayHost>callcentric.com</SofiaGatewayHost>
 

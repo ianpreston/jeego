@@ -11,7 +11,7 @@ type ESOListener struct {
 }
 
 func NewESOListener(config *Config) *ESOListener {
-	listener, err := net.Listen("tcp", config.BindTo)
+	listener, err := net.Listen("tcp", config.ESOBindTo)
 	if err != nil {
 		return nil;
 	}
