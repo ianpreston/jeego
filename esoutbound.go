@@ -125,6 +125,7 @@ func (es *ESOutbound) ReadHeaders() error {
 
 		key := strings.Trim(tokens[0], "\n")
 		value := strings.Trim(tokens[1], "\n")
+		value, _ = url.QueryUnescape(value)
 
 		es.headers[key] = value
 	}
