@@ -29,10 +29,15 @@ func (es *ESInbound) Setup() error {
 	// Authenticate
 	es.Auth(es.config.InboundPassword)
 
-	// TODO Move
-	es.SendOriginate("16025555604", "14805551212")
-
 	return nil
+}
+
+func (es *ESInbound) Close() {
+	es.conn.Close()
+}
+
+func (es *ESInbound) Originate(from string, to string) {
+	es.SendOriginate(from, to)
 }
 
 func (es *ESInbound) SendApi(appName string, appArg string) string {
