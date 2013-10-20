@@ -14,6 +14,7 @@ type ESOutbound struct {
 	uuid string
 	fromDid string
 	toDid string
+	inbound bool
 	headers map[string]string
 }
 
@@ -21,7 +22,15 @@ func NewESOutbound(conn net.Conn, config *Config) *ESOutbound {
 	reader := bufio.NewReader(conn)
 	headers := make(map[string]string)
 
-	return &ESOutbound { EventSocket{ conn, reader, config }, "", "", "", headers }
+	return &ESOutbound {
+		EventSocket: EventSocket{ conn, reader, config },
+
+		uuid:    "",
+		fromDid: "", 
+		toDid:   "",
+		inbound: false,
+		headers: headers,
+	}
 }
 
 func (es *ESOutbound) Handle() {
@@ -121,11 +130,15 @@ func (es *ESOutbound) ReadHeaders() error {
 	}
 
 	es.uuid = es.headers["Channel-Unique-ID"]
-	es.fromDid = es.headers["variable_sip_from_user"]
-	es.toDid = es.headers["variable_sip_to_user"]
+	es.inbound = (es.headers["Channel-Direction"] == "inbound")
 
-	// TODO On an outbound call, 'variable_jeego_outbound_number' will be
-	// the # we are actually calling from.
+	if es.inbound {
+		es.fromDid = es.headers["variable_sip_from_user"]
+		es.toDid = es.headers["variable_sip_to_user"]
+	} else {
+		es.fromDid = es.headers["variable_jeego_outbound_number"]
+		es.toDid = es.headers["variable_sip_to_user"]
+	}
 
 	return nil
 }
