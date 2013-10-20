@@ -36,8 +36,8 @@ func (es *ESInbound) Close() {
 	es.conn.Close()
 }
 
-func (es *ESInbound) Originate(from string, to string) {
-	es.SendOriginate(from, to)
+func (es *ESInbound) Originate(from string, to string, xmlUrl string) {
+	es.SendOriginate(from, to, xmlUrl)
 }
 
 func (es *ESInbound) SendApi(appName string, appArg string) string {
@@ -52,8 +52,8 @@ func (es *ESInbound) Auth(password string) string {
 	return r
 }
 
-func (es *ESInbound) SendOriginate(from string, to string) {
-	prefix := fmt.Sprintf("{jeego_outbound_number=%s,execute_on_answer='socket 127.0.0.1:8084 full'}", from)
+func (es *ESInbound) SendOriginate(from string, to string, xmlUrl string) {
+	prefix := fmt.Sprintf("{jeego_outbound_number='%s',jeego_url='%s',execute_on_answer='socket 127.0.0.1:8084 full'}", from, xmlUrl)
 	body := fmt.Sprintf("sofia/gateway/callcentric.com/%s@callcentric.com &park()", to)
 	appArg := prefix + body
 

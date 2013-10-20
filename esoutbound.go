@@ -45,18 +45,26 @@ func (es *ESOutbound) Handle() {
 	fmt.Println("From DID    : " + es.fromDid)
 	fmt.Println("To DID      : " + es.toDid)
 
-	// Determine, via the routes from the config file, the root URL for
-	// the 'to' DID
-	rr := es.config.RouteRuleForDID(es.toDid)
-	if rr == nil {
-		fmt.Println("There is no route rule configured for this DID")
-		es.SendExecute("hangup")
-		es.conn.Close()
-		return
+	xmlUrl := ""
+	if es.inbound {
+		// For an inbound call: Determine, via the routes from the
+		// config file, the root URL for the 'to' DID
+		rr := es.config.RouteRuleForDID(es.toDid)
+		if rr == nil {
+			fmt.Println("There is no route rule configured for this DID")
+			es.SendExecute("hangup")
+			es.conn.Close()
+			return
+		}
+		xmlUrl = rr.URL
+	} else {
+		// For an outbound call: Determine, via the channel header set by the
+		// HTTPListener, the XML API URL specified by the user
+		xmlUrl = es.headers["variable_jeego_url"]
 	}
 
 	// Make an XML API request to this URL
-	err := es.XmlApiRequest(rr.URL, nil)
+	err := es.XmlApiRequest(xmlUrl, nil)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 

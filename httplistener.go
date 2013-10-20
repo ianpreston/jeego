@@ -44,6 +44,9 @@ func (hl *HTTPListener) NewCall(w http.ResponseWriter, r *http.Request) {
 
 	from := r.Form.Get("from")
 	to := r.Form.Get("to")
+	url := r.Form.Get("url")
+
+	// TODO Validate from, to, url
 
 	es, err := NewESInbound(hl.config)
 	if err != nil {
@@ -53,7 +56,7 @@ func (hl *HTTPListener) NewCall(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	es.Setup()
-	es.Originate(from, to)
+	es.Originate(from, to, url)
 	es.Close()
 
 	w.Write([]byte("Success"))
